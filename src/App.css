@@ -1,38 +1,102 @@
-.App {
+.overAll{
+  display: grid;
+  grid-template-areas:"header header header"
+  "name image actions";
+  width: 100%;
+  max-height: 300px;
+}
+.overAll-hide{
+  filter: blur(3px) grayscale(1) opacity(0.5);  
+}
+
+.header{
+  grid-area: header;
+  text-align: center;
+  margin-bottom: 25px;
+}
+.sectionTitle {
+  border-bottom: 1px solid #000;
   text-align: center;
 }
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.name{
+  grid-area: name;
+  border: 1px solid #000;
+}
+.name li{
+  cursor: pointer;
+}
+.image{
+  grid-area: image;
+  border: 1px solid #000;
+  text-align: center;
+}
+.image img, .imageDetails img{
+  width: 100%;
+  height: auto;
+}
+.image img{
+  max-width: 200px;
+}
+.actions{
+  grid-area: actions;
+  border: 1px solid #000;
+  text-align: center;
+}
+.actions button img{
+  width: 100%;
+  height: auto;
+  max-width: 50px;
+  cursor: pointer;
+}
+.actions button{
+  margin-top: 20px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.details{
+  display: grid;
+  grid-template-areas: "title close"
+  "imageDetails imageDetails"
+  "abilities abilities";
+  border: 3px solid #000;
+  text-align: center;
+  width: 30%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 50;
+  background: #fff;
+  min-width: 250px;
+}
+.details .title{
+  grid-area: title;
+}
+.details .close{
+  grid-area: close;
+}
+.details .imageDetails{
+  grid-area: imageDetails;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.details-show{
+  display: grid;
 }
 
-.App-link {
-  color: #61dafb;
+.details .abilities{
+  text-align: left;
+  padding-left: 5%;
+  grid-area: abilities;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+
+form input{
+  margin-left: 10px;
+}
+input[type="submit"]{
+  margin-right: 10px;
+}
+span.close {
+  margin-top: 25px;
+  cursor: pointer;
 }
