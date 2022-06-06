@@ -41,7 +41,7 @@ describe("<PokemonDetails/>", () =>{
   })
   
   test('render content', () => {
-    console.log(component);
+    //console.log(component);
     screen.findByText(/metapod/i);
   })
   
