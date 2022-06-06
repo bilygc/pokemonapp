@@ -33,7 +33,7 @@ describe("<PokemonDetails/>", () =>{
     }
   
   beforeEach(() =>{
-    render(<PokemonDetails details={details} />)
+    component = render(<PokemonDetails details={details} />)
   });
 
   afterEach(() =>{
