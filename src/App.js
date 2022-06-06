@@ -1,40 +1,25 @@
 import './App.css';
+import { Container, Box, Grid, Typography, TextField, Button, Alert, Snackbar } from '@mui/material';
 import { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import IconButton from '@mui/material/IconButton';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import PokemonDetails from './PokemonDetails';
 
 const url = "https://pokeapi.co/api/v2/pokemon/";
 let apiData = [];
-
-function PokemonDetails({details}){
-
-  const closeButton = () =>{
-    document.querySelector(".overAll").classList.toggle("overAll-hide");
-    document.querySelector(".details").classList.toggle("details-show")
-  }
-  return(
-    <div className='details'>
-      <h2 className='title'>{details.name}</h2>
-      <span className='close' onClick={() => closeButton()} >X Close</span>
-      <div className="imageDetails">
-        <img src={details.img} alt={details.name} />
-      </div>
-      <div className="abilities">
-        <h4>Abilities:</h4>
-        <ul>
-          {details.abilities.map( abs =>(
-            <li key={abs.ability.name}>{abs.ability.name}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
 
 function App() {
   const axios = require('axios').default;
 
   const [pokemonList, setPokemonList] = useState([]);
-  const [searchField, setSearchField] = useState("");
-  const [details, setDetails] = useState({name:"", abilities:[], img: ""})
+  const [displayInfo, setDisplayInfo] = useState({});
+  const [isShown, setIsShown] = useState(false);
+  const [snackBarErrorIsOpen, setSnackBarErrorIsOpen] = useState(false);
+  const [snackBarSuccessIsOpen, setSnackBarSuccessIsOpen] = useState(false);
+  const [snackBarMsg, setSnackBarMsg] = useState("");
+
+  const { control, handleSubmit } = useForm();
 
   useEffect(() => {
     axios.get(url)
@@ -45,17 +30,20 @@ function App() {
     .catch((error) =>{
       console.log(`Hubo un error ${error}`);
     })
-  }, []);
+  }, []);  
+  
 
-  const handleSubmit = (event) =>{
-    event.preventDefault();
+  const onSubmit = async (data) =>{
 
-    const pokemonIndex = checkPokemon(searchField);
-
+    const pokemonIndex = checkPokemon(data.searchTerm);
+    
+    
     if(pokemonIndex >= 0){
-      setPokemonList(searchField === "" ? pokemonList : pokemonList.filter(x => x.name === searchField ));
+      const details = await getDetails(pokemonList[pokemonIndex].url);
+      setDisplayInfo({...pokemonList[pokemonIndex], ...details})
     }else{
-      alert("that pokemon doesnt exist in the list");
+      setSnackBarMsg("That pokemon isn't in the list");
+      setSnackBarErrorIsOpen(true);
     }
 
   }
@@ -66,80 +54,142 @@ function App() {
       
       const response = await axios.get(url);
       
+      
       let imgUrl = response.data.sprites.other["official-artwork"].front_default;
-      setDetails({name: response.data.name, abilities: response.data.abilities, img: imgUrl});
-      document.querySelector(".details").classList.toggle("details-show");
-      document.querySelector(".overAll").classList.toggle("overAll-hide");
+      return ({abilities: response.data.abilities, img:imgUrl, type: response.data.types})
       
     } catch (error) {
+      setSnackBarMsg("Hubo un error obteniendo los detalles del pokemon");
+      setSnackBarErrorIsOpen(true);
       console.log(`Hubo un error: ${error}`)      
     }    
 
   }
-  const resetList = () =>{
-    setPokemonList(apiData);
+  const pokemonClick = () =>{
+    setIsShown(current => !current);
   }
 
   const deletePokemon = (name) =>{
-    const arrCloned = [...pokemonList]
+  
+    const arrCloned = [...pokemonList];
+
     const pokemonIndex = arrCloned.map( item => item.name).indexOf(name);
     
     if(pokemonIndex >= 0){
       let removedPokemon = arrCloned.splice(arrCloned.map( item => item.name).indexOf(name), 1 );      
-      setPokemonList(arrCloned);      
+      setPokemonList(arrCloned);
+      setDisplayInfo({});
+      setSnackBarMsg("Pokemon eliminado exitosamente!!");
+      setSnackBarSuccessIsOpen(true);
+    }
+    else{
+      setSnackBarMsg(`El pokemon no existe o ha sido eliminado`)      
+      setSnackBarErrorIsOpen(true);
     }
   }
 
   const checkPokemon = (name) =>{
-    const arrCloned = [...pokemonList]
+    const arrCloned = [...pokemonList];
     const pokemonIndex = arrCloned.map( item => item.name).indexOf(name);
     return pokemonIndex;    
   }
 
+  const changeShown = ()=>{
+    setIsShown(current => !current);
+  }
+  const handleSnackBarClose = (event, reason) =>{
+    if (reason === "clickaway")
+    {
+      return;
+    }
+    setSnackBarErrorIsOpen(false);
+  }
+  const handleSnackBarSuccessClose = (event, reason) =>{
+    if (reason === "clickaway")
+    {
+      return;
+    }
+    setSnackBarSuccessIsOpen(false);
+  }
+
+
   if (apiData.length <= 0 ) return null
   
   return (
-    <div className='container'>
-      <div className="overAll">
-        <div className="header">
-          <h1>Pokemon List</h1>
-          <form onSubmit={(e) => handleSubmit(e)}>
-            <label>
-              Pokemon name: 
-              <input type="text"  value={searchField} onChange={(e) => setSearchField(e.target.value)} />
-            </label>
-            <input type="submit" value="Search" />
-            <button type='button' onClick={() => resetList()}>Reset</button>
+    <Box>
+      <Grid container >
+        <Grid item xs={12} sx={{textAlign:"center", verticalAlign:"bottom"}}>
+          <Typography variant='h1' gutterBottom sx={{fontSize:"3rem"}} >Pokemon list</Typography>
+          <form onSubmit={handleSubmit(onSubmit)} style={{display:"flex", justifyContent:"center", alignItems:"end", marginBottom:"15px"}} >
+             <label>
+               Pokemon name: 
+             </label>
+               <Controller
+                name="searchTerm"
+                control={control}
+                defaultValue=""
+                rules={ {required: true, pattern: {value: /^[A-Za-z]+$/, message: 'input a valid text'}, minLength : {value: 3, message: `min length is 3` }, maxLength : {value: 30, message: `max length is 30` }}}
+                render={({
+                    field,
+                    fieldState: { error },
+                    formState
+                  }) => (
+                    <TextField
+                        label="Search for a pokemon"
+                        type="text"
+                        size="small"
+                        variant="outlined"
+                        {...field}
+                        error={error}
+                        helperText={error && `Field ${error.type} ${error.message}`}
+                        sx={{margin:"0 10px"}}
+                    />
+                )}
+                />
+             <Button id="submit" variant="contained" type="submit" >Search</Button>
           </form>
-
-        </div>
-        <div className="name">
-          <div className="sectionTitle">
-            <h4>Pokemon name</h4>
-          </div>
-          <ul>
-            {
-              pokemonList.map( (pokemon) => (
-                <li key={pokemon.name} onClick={() => getDetails(pokemon.url)} >{`${pokemon.name}`}</li>
-              ))
-            }
-          </ul>
-        </div>
-        <div className="image">
-        <div className="sectionTitle">
-        <h4>Pokemon image</h4>
-        </div>
-          <img src={details.img} alt={details.name}  />
-        </div>
-        <div className="actions">
-          <div className="sectionTitle">
-            <h4>Actions</h4>
-          </div>
-          <button onClick={() => deletePokemon(details.name)  } ><img src="https://img.icons8.com/ios7/12x/trash.png" alt="trash" /></button>
-        </div>
-      </div>
-      <PokemonDetails details={details} />
-    </div>
+        </Grid>
+        <Grid  item xs={4} sx={{border:"3px solid #000"}}>
+          <Container component="div" sx={{borderBottom:"3px solid #000", padding:"10px 0", textAlign:"center"}}>
+            <Typography variant="h3" sx={{fontSize:"1.5rem"}} >Pokemon name</Typography>
+          </Container>
+          <Container component="div" >
+            <Typography onClick={pokemonClick} variant="h6" >{displayInfo.name}</Typography>
+          </Container>
+        </Grid>
+        <Grid item xs={4} sx={{border:"3px solid #000"}} >
+          <Container component="div" sx={{borderBottom:"3px solid #000", padding:"10px 0", textAlign:"center"}}>
+            <Typography variant="h3" sx={{fontSize:"1.5rem"}}>
+              Pokemon Image
+            </Typography>
+          </Container>
+          <Container component="div" sx={{textAlign:"center"}}>
+            <img src={displayInfo.img} alt={`Pokemon ${displayInfo.name}`} style={{width:"100%", heigt:"auto", maxWidth:"200px"}} />
+          </Container>
+        </Grid>
+        <Grid item xs={4} sx={{border:"3px solid #000"}}>
+          <Container component="div" sx={{borderBottom:"3px solid #000", padding:"10px 0", textAlign:"center"}}>
+            <Typography variant="h3" sx={{fontSize:"1.5rem"}} >Actions</Typography>
+          </Container>
+          <Container component="div" sx={{textAlign:"center"}}>
+            <IconButton onClick={() => deletePokemon(displayInfo.name)} aria-label="delete" size="large">
+              <DeleteForeverIcon fontSize="inherit" />
+            </IconButton>
+          </Container>
+        </Grid>
+      </Grid>      
+        {isShown && <PokemonDetails details={displayInfo} changeShown={changeShown} /> }
+        <Snackbar open={snackBarErrorIsOpen} autoHideDuration={6000} onClose={handleSnackBarClose}>
+          <Alert onClose={handleSnackBarClose} severity="error" sx={{ width: '100%' }}>
+            {snackBarMsg}
+          </Alert>
+        </Snackbar>
+        <Snackbar open={snackBarSuccessIsOpen} autoHideDuration={6000} onClose={handleSnackBarSuccessClose}>
+          <Alert onClose={handleSnackBarSuccessClose} severity="success" sx={{ width: '100%' }}>
+            {snackBarMsg}
+          </Alert>
+        </Snackbar>
+    </Box>
   );
 }
 
