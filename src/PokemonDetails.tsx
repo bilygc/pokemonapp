@@ -9,22 +9,23 @@ import Avatar from '@mui/material/Avatar';
 import { red } from '@mui/material/colors';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
+import { MyProps } from "./types";
 
-function PokemonDetails({details, changeShown}){
-    console.log(details);
+const PokemonDetails: React.FC<MyProps> = ({details, changeShown}) =>{
+    console.log(details);    
 
-    if (details.length <= 0) return null
+    if (!details) return null
   
     return (
       <Card className='Card' sx={{ maxWidth: 345 }}>
         <CardHeader
           avatar={
             <Avatar src={details.img} sx={{ bgcolor: red[500] }} aria-label="pokemon">
-              {details.name?.length > 0 ? details.name.charAt(0) : "?"}
+              {details.name?.charAt(0) ?? "?"}
             </Avatar>
           }
           title={details.name}
-          subheader={details?.type.map( item => `${item.type.name} ` ) }
+          subheader={details.type?.map( item => `${item.type.name} ` ) }
         />
         <CardMedia
           component="img"
@@ -33,11 +34,11 @@ function PokemonDetails({details, changeShown}){
           alt="Paella dish"
         />
         <CardContent>
-          <Typography variant="subtitle" >
+          <Typography variant="subtitle1" >
             Abilities:
           </Typography>
           <ul>
-            {details.abilities.map( (item) => <li key={item.ability.name}><Typography variant="subtitle2">{item.ability.name}</Typography></li> )}
+            {details.abilities?.map( (item) => <li key={item.ability.name}><Typography variant="subtitle2">{item.ability.name}</Typography></li> )}
           </ul>
         </CardContent>
         <CardActions sx={{flexDirection:"row-reverse"}}>        

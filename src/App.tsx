@@ -1,3 +1,4 @@
+import React from 'react';
 import './App.css';
 import { Container, Box, Grid, Typography, TextField, Button, Alert, Snackbar } from '@mui/material';
 import { useState, useEffect } from 'react';
@@ -5,41 +6,44 @@ import { useForm, Controller } from 'react-hook-form';
 import IconButton from '@mui/material/IconButton';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import PokemonDetails from './PokemonDetails';
+import {Response, Result, SubmitData, Details, DisplayInfo} from './types';
 
 const url = "https://pokeapi.co/api/v2/pokemon/";
-let apiData = [];
+let apiData: Result[] = [];
 
-function App() {
+const App:React.FC = () => {
   const axios = require('axios').default;
 
-  const [pokemonList, setPokemonList] = useState([]);
-  const [displayInfo, setDisplayInfo] = useState({});
-  const [isShown, setIsShown] = useState(false);
-  const [snackBarErrorIsOpen, setSnackBarErrorIsOpen] = useState(false);
-  const [snackBarSuccessIsOpen, setSnackBarSuccessIsOpen] = useState(false);
-  const [snackBarMsg, setSnackBarMsg] = useState("");
+  const [pokemonList, setPokemonList] = useState<Result[]>([]);
+  const [displayInfo, setDisplayInfo] = useState<DisplayInfo>({});
+  const [isShown, setIsShown] = useState<boolean>(false);
+  const [snackBarErrorIsOpen, setSnackBarErrorIsOpen] = useState<boolean>(false);
+  const [snackBarSuccessIsOpen, setSnackBarSuccessIsOpen] = useState<boolean>(false);
+  const [snackBarMsg, setSnackBarMsg] = useState<string>("");
 
   const { control, handleSubmit } = useForm();
 
   useEffect(() => {
     axios.get(url)
-    .then( (response) =>{
+    .then( (response: Response) =>{
       apiData = response.data.results;
+      console.log(response);
       setPokemonList(apiData)
     })
-    .catch((error) =>{
+    .catch((error: any) =>{
       console.log(`Hubo un error ${error}`);
     })
   }, []);  
   
 
-  const onSubmit = async (data) =>{
+  const onSubmit = async (data: SubmitData) =>{
 
     const pokemonIndex = checkPokemon(data.searchTerm);
     
     
     if(pokemonIndex >= 0){
-      const details = await getDetails(pokemonList[pokemonIndex].url);
+      const url = pokemonList[pokemonIndex].url ?? "/";
+      const details: Details = await getDetails(url);
       setDisplayInfo({...pokemonList[pokemonIndex], ...details})
     }else{
       setSnackBarMsg("That pokemon isn't in the list");
@@ -48,7 +52,7 @@ function App() {
 
   }
 
-  const getDetails = async (url) => {
+  const getDetails = async (url: string) => {
     
     try {
       
@@ -61,7 +65,8 @@ function App() {
     } catch (error) {
       setSnackBarMsg("Hubo un error obteniendo los detalles del pokemon");
       setSnackBarErrorIsOpen(true);
-      console.log(`Hubo un error: ${error}`)      
+      console.log(`Hubo un error: ${error}`)
+      return ({abilities: "", img:"", type: ""});
     }    
 
   }
@@ -69,9 +74,13 @@ function App() {
     setIsShown(current => !current);
   }
 
-  const deletePokemon = (name) =>{
+  const deletePokemon = (name: string) =>{
   
     const arrCloned = [...pokemonList];
+
+    if (name === ""){
+      return
+    }
 
     const pokemonIndex = arrCloned.map( item => item.name).indexOf(name);
     
@@ -88,7 +97,7 @@ function App() {
     }
   }
 
-  const checkPokemon = (name) =>{
+  const checkPokemon = (name: string) =>{
     const arrCloned = [...pokemonList];
     const pokemonIndex = arrCloned.map( item => item.name).indexOf(name);
     return pokemonIndex;    
@@ -97,14 +106,14 @@ function App() {
   const changeShown = ()=>{
     setIsShown(current => !current);
   }
-  const handleSnackBarClose = (event, reason) =>{
+  const handleSnackBarClose = (event: React.SyntheticEvent | Event, reason?: string) =>{
     if (reason === "clickaway")
     {
       return;
     }
     setSnackBarErrorIsOpen(false);
   }
-  const handleSnackBarSuccessClose = (event, reason) =>{
+  const handleSnackBarSuccessClose = (event: React.SyntheticEvent | Event, reason?: string) =>{
     if (reason === "clickaway")
     {
       return;
@@ -140,7 +149,7 @@ function App() {
                         size="small"
                         variant="outlined"
                         {...field}
-                        error={error}
+                        error={error ? true: false}
                         helperText={error && `Field ${error.type} ${error.message}`}
                         sx={{margin:"0 10px"}}
                     />
@@ -154,7 +163,7 @@ function App() {
             <Typography variant="h3" sx={{fontSize:"1.5rem"}} >Pokemon name</Typography>
           </Container>
           <Container component="div" >
-            <Typography onClick={pokemonClick} variant="h6" >{displayInfo.name}</Typography>
+            <Typography onClick={pokemonClick} variant="h6" >{displayInfo.name }</Typography>
           </Container>
         </Grid>
         <Grid item xs={4} sx={{border:"3px solid #000"}} >
@@ -164,7 +173,7 @@ function App() {
             </Typography>
           </Container>
           <Container component="div" sx={{textAlign:"center"}}>
-            <img src={displayInfo.img} alt={`Pokemon ${displayInfo.name}`} style={{width:"100%", heigt:"auto", maxWidth:"200px"}} />
+            <img src={displayInfo.img} alt={`Pokemon ${displayInfo.name ?? ""}`} style={{width:"100%", height:"auto", maxWidth:"200px"}} />
           </Container>
         </Grid>
         <Grid item xs={4} sx={{border:"3px solid #000"}}>
@@ -172,18 +181,18 @@ function App() {
             <Typography variant="h3" sx={{fontSize:"1.5rem"}} >Actions</Typography>
           </Container>
           <Container component="div" sx={{textAlign:"center"}}>
-            <IconButton onClick={() => deletePokemon(displayInfo.name)} aria-label="delete" size="large">
+            <IconButton onClick={() => deletePokemon(displayInfo.name ?? "")} aria-label="delete" size="large">
               <DeleteForeverIcon fontSize="inherit" />
             </IconButton>
           </Container>
         </Grid>
-      </Grid>      
+      </Grid>          
         {isShown && <PokemonDetails details={displayInfo} changeShown={changeShown} /> }
         <Snackbar open={snackBarErrorIsOpen} autoHideDuration={6000} onClose={handleSnackBarClose}>
           <Alert onClose={handleSnackBarClose} severity="error" sx={{ width: '100%' }}>
             {snackBarMsg}
           </Alert>
-        </Snackbar>
+        </Snackbar>   
         <Snackbar open={snackBarSuccessIsOpen} autoHideDuration={6000} onClose={handleSnackBarSuccessClose}>
           <Alert onClose={handleSnackBarSuccessClose} severity="success" sx={{ width: '100%' }}>
             {snackBarMsg}
